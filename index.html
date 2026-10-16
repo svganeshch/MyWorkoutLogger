@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="HGZ-1003" />
+  <title>Zorex HGZ-1003 Calculator & Logger</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2: #22c55e;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      padding: env(safe-area-inset-top, 20px) 16px calc(env(safe-area-inset-bottom, 20px) + 76px);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      user-select: none;
+    }
+    header {
+      padding: 12px 0 14px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    h1 { font-size: 1.2rem; margin: 0; font-weight: 700; }
+    .subtitle { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .badge {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.88rem;
+    }
+    .tab-view { display: none; }
+    .tab-view.active { display: block; }
+
+    /* Cards & Controls */
+    .control-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .control-row { margin-bottom: 16px; }
+    .control-row:last-child { margin-bottom: 0; }
+    .label-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .val-highlight { color: var(--accent); font-weight: 700; }
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: #334155;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: 3px solid #0f172a;
+    }
+    .pin-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .pin-btn {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 8px 0;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .pin-btn.active {
+      background: var(--accent);
+      color: #0f172a;
+      border-color: var(--accent);
+      font-weight: 700;
+    }
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: #0f172a;
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .seg-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 8px 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+    .seg-btn.active {
+      background: var(--card);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+
+    /* Station List */
+    .station-list { display: flex; flex-direction: column; gap: 10px; }
+    .station-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+    .station-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .station-name { font-weight: 600; font-size: 0.95rem; }
+    .station-ratio { font-size: 0.75rem; color: var(--muted); }
+    .quick-log-btn {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .weights {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .felt-weight { font-size: 1.3rem; font-weight: 800; color: var(--accent-2); }
+    .theo-weight { font-size: 0.8rem; color: var(--muted); }
+    .bar-bg {
+      width: 100%;
+      height: 6px;
+      background: #0f172a;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      border-radius: 3px;
+      transition: width 0.2s ease;
+    }
+
+    /* Logger Form */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-label { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+    select, input[type="number"], input[type="text"] {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      outline: none;
+    }
+    .stepper {
+      display: flex;
+      align-items: center;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .step-btn {
+      background: transparent;
+      border: none;
+      color: var(--accent);
+      font-size: 1.2rem;
+      font-weight: 700;
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+    .stepper input {
+      border: none;
+      text-align: center;
+      padding: 8px 0;
+      font-weight: 700;
+      -moz-appearance: textfield;
+    }
+    .preview-pill {
+      background: #0f172a;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+    }
+    .btn-primary {
+      width: 100%;
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .btn-secondary {
+      flex: 1;
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+    .btn-danger {
+      color: var(--danger);
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    /* Log History */
+    .day-group {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .day-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .log-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+    }
+    .log-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .log-title { font-weight: 600; font-size: 0.9rem; }
+    .log-meta { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .log-right { display: flex; align-items: center; gap: 10px; }
+    .log-weight { text-align: right; }
+    .log-weight-val { font-weight: 700; color: var(--accent-2); font-size: 0.95rem; }
+    .log-sets { font-size: 0.75rem; color: var(--muted); }
+    .del-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 1rem;
+      padding: 4px 6px;
+      cursor: pointer;
+    }
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 32px 16px;
+      font-size: 0.9rem;
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding: 8px 16px calc(env(safe-area-inset-bottom, 12px) + 4px);
+      z-index: 100;
+    }
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .nav-btn.active { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Zorex HGZ-1003</h1>
+      <div class="subtitle">72 kg Stack (1×3.25 kg + 11×6.25 kg)</div>
+    </div>
+    <div class="badge" id="stackBadge">34.50 kg</div>
+  </header>
+
+  <!-- TAB 1: CALCULATOR -->
+  <div id="tab-calc" class="tab-view active">
+    <div class="control-card">
+      <div class="control-row">
+        <div class="label-row">
+          <span>Selector Pin Position</span>
+          <span class="val-highlight" id="pinLabel">Pin 6 (34.50 kg)</span>
+        </div>
+        <input type="range" id="pinSlider" min="1" max="12" value="6" />
+        <div class="pin-grid" id="pinGrid"></div>
+      </div>
+
+      <div class="control-row">
+        <div class="label-row">
+          <span>Cable & Guide Rod Friction</span>
+          <span class="val-highlight" id="frictionLabel">+10%</span>
+        </div>
+        <input type="range" id="frictionSlider" min="0" max="25" value="10" />
+      </div>
+
+      <div class="control-row">
+        <div class="label-row"><span>Low Pulley Floating Block Routing</span></div>
+        <div class="segmented">
+          <button class="seg-btn active" id="mode2x" onclick="setMode('2x')">2:1 Multiplier (Heavy)</button>
+          <button class="seg-btn" id="modeHalf" onclick="setMode('0.5x')">0.5:1 Halving (Light)</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="station-list" id="stationList"></div>
+  </div>
+
+  <!-- TAB 2: WORKOUT LOGGER -->
+  <div id="tab-log" class="tab-view">
+    <div class="control-card">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Exercise / Station</label>
+          <select id="logStation" onchange="updateLogPreview()">
+            <option value="0">High Pulley — Lat Pulldown</option>
+            <option value="0">High Pulley — Triceps Pushdown</option>
+            <option value="1">Seated Chest Press</option>
+            <option value="2">Pec Deck / Butterfly Fly</option>
+            <option value="3">Low Pulley — Seated Cable Row</option>
+            <option value="3">Low Pulley — Preacher / Bicep Curl</option>
+            <option value="4">Leg Developer — Leg Extension</option>
+            <option value="4">Leg Developer — Standing Leg Curl</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Pin # (1–12)</label>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepVal('logPin', -1, 1, 12)">−</button>
+            <input type="number" id="logPin" min="1" max="12" value="6" onchange="updateLogPreview()" />
+            <button class="step-btn" onclick="stepVal('logPin', 1, 1, 12)">+</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Sets</label>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepVal('logSets', -1, 1, 20)">−</button>
+            <input type="number" id="logSets" min="1" max="20" value="3" onchange="updateLogPreview()" />
+            <button class="step-btn" onclick="stepVal('logSets', 1, 1, 20)">+</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Reps per Set</label>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepVal('logReps', -1, 1, 50)">−</button>
+            <input type="number" id="logReps" min="1" max="50" value="10" onchange="updateLogPreview()" />
+            <button class="step-btn" onclick="stepVal('logReps', 1, 1, 50)">+</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notes (Optional)</label>
+          <input type="text" id="logNotes" placeholder="e.g. Drop set, slow eccentric" />
+        </div>
+      </div>
+
+      <div class="preview-pill">
+        <span>Effective Load: <strong id="previewFelt" style="color:var(--accent-2)">38.0 kg felt</strong></span>
+        <span id="previewTheo" style="color:var(--muted)">34.50 kg mech</span>
+      </div>
+
+      <button class="btn-primary" onclick="addWorkoutLog()">+ Save Set to Workout Log</button>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-secondary" onclick="exportCSV()">Export CSV</button>
+      <button class="btn-secondary" onclick="exportJSON()">Backup JSON</button>
+      <button class="btn-secondary" onclick="document.getElementById('importFile').click()">Import</button>
+      <button class="btn-secondary btn-danger" onclick="clearAllLogs()">Clear</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)" />
+    </div>
+
+    <div id="logHistory"></div>
+  </div>
+
+  <!-- BOTTOM NAVIGATION -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" id="navCalc" onclick="switchTab('calc')">
+      <span>⚡ Calculator</span>
+    </button>
+    <button class="nav-btn" id="navLog" onclick="switchTab('log')">
+      <span>📋 Workout Log (<span id="logCountBadge">0</span>)</span>
+    </button>
+  </nav>
+
+  <script>
+    const state = {
+      pin: Number(localStorage.getItem('hgz_pin')) || 6,
+      friction: Number(localStorage.getItem('hgz_friction') ?? 10),
+      mode: localStorage.getItem('hgz_mode') || '2x',
+      logs: JSON.parse(localStorage.getItem('hgz_workout_logs') || '[]')
+    };
+
+    const pinSlider = document.getElementById('pinSlider');
+    const frictionSlider = document.getElementById('frictionSlider');
+    const pinGrid = document.getElementById('pinGrid');
+
+    for (let i = 1; i <= 12; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'pin-btn';
+      btn.textContent = i;
+      btn.onclick = () => { state.pin = i; pinSlider.value = i; render(); };
+      pinGrid.appendChild(btn);
+    }
+
+    pinSlider.value = state.pin;
+    frictionSlider.value = state.friction;
+
+    pinSlider.oninput = (e) => { state.pin = Number(e.target.value); render(); };
+    frictionSlider.oninput = (e) => { state.friction = Number(e.target.value); render(); };
+
+    function getStackWeight(pin) {
+      return 3.25 + (pin - 1) * 6.25;
+    }
+
+    function getStations() {
+      return [
+        { name: 'High Pulley (Lat / Triceps)', ratio: 1.0, label: '1 : 1 Direct' },
+        { name: 'Seated Chest Press', ratio: 1.15, label: '~1.15 : 1 Lever' },
+        { name: 'Pec Deck / Butterfly', ratio: 1.33, label: '~1.33 : 1 Cam' },
+        {
+          name: 'Low Pulley / Preacher Curl',
+          ratio: state.mode === '2x' ? 2.0 : 0.5,
+          label: state.mode === '2x' ? '2 : 1 Compound' : '0.5 : 1 Compound'
+        },
+        {
+          name: 'Leg Extension / Curl',
+          ratio: state.mode === '2x' ? 1.7 : 0.5,
+          label: state.mode === '2x' ? '~1.7 : 1 Lever' : '0.5 : 1 Compound'
+        }
+      ];
+    }
+
+    function setMode(m) {
+      state.mode = m;
+      render();
+    }
+
+    function switchTab(tab) {
+      document.getElementById('tab-calc').classList.toggle('active', tab === 'calc');
+      document.getElementById('tab-log').classList.toggle('active', tab === 'log');
+      document.getElementById('navCalc').classList.toggle('active', tab === 'calc');
+      document.getElementById('navLog').classList.toggle('active', tab === 'log');
+      if (tab === 'log') {
+        document.getElementById('logPin').value = state.pin;
+        updateLogPreview();
+      }
+    }
+
+    function jumpToLog(stationIndex) {
+      const select = document.getElementById('logStation');
+      for (let i = 0; i < select.options.length; i++) {
+        if (Number(select.options[i].value) === stationIndex) {
+          select.selectedIndex = i;
+          break;
+        }
+      }
+      switchTab('log');
+    }
+
+    function stepVal(id, delta, min, max) {
+      const el = document.getElementById(id);
+      const next = Math.min(max, Math.max(min, (Number(el.value) || min) + delta));
+      el.value = next;
+      if (id === 'logPin') {
+        state.pin = next;
+        pinSlider.value = next;
+        render();
+      }
+      updateLogPreview();
+    }
+
+    function updateLogPreview() {
+      const pin = Math.min(12, Math.max(1, Number(document.getElementById('logPin').value) || 6));
+      const stationIdx = Number(document.getElementById('logStation').value);
+      const station = getStations()[stationIdx];
+      const stackW = getStackWeight(pin);
+      const theo = stackW * station.ratio;
+      const felt = theo * (1 + state.friction / 100);
+
+      document.getElementById('previewFelt').textContent = `${felt.toFixed(1)} kg felt`;
+      document.getElementById('previewTheo').textContent = `${theo.toFixed(2)} kg mech (Pin ${pin})`;
+    }
+
+    function addWorkoutLog() {
+      const select = document.getElementById('logStation');
+      const exerciseName = select.options[select.selectedIndex].text;
+      const stationIdx = Number(select.value);
+      const pin = Math.min(12, Math.max(1, Number(document.getElementById('logPin').value) || 6));
+      const sets = Math.max(1, Number(document.getElementById('logSets').value) || 3);
+      const reps = Math.max(1, Number(document.getElementById('logReps').value) || 10);
+      const notes = document.getElementById('logNotes').value.trim();
+
+      const station = getStations()[stationIdx];
+      const stackW = getStackWeight(pin);
+      const theoKg = Number((stackW * station.ratio).toFixed(2));
+      const feltKg = Number((theoKg * (1 + state.friction / 100)).toFixed(1));
+
+      const now = new Date();
+      const entry = {
+        id: Date.now(),
+        date: now.toISOString().split('T')[0],
+        time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        exercise: exerciseName,
+        pin,
+        stackKg: stackW,
+        theoKg,
+        feltKg,
+        sets,
+        reps,
+        notes
+      };
+
+      state.logs.unshift(entry);
+      document.getElementById('logNotes').value = '';
+      saveAndRenderLogs();
+    }
+
+    function deleteLog(id) {
+      state.logs = state.logs.filter(item => item.id !== id);
+      saveAndRenderLogs();
+    }
+
+    function clearAllLogs() {
+      if (!state.logs.length) return;
+      if (confirm('Clear all saved workout logs?')) {
+        state.logs = [];
+        saveAndRenderLogs();
+      }
+    }
+
+    function saveAndRenderLogs() {
+      localStorage.setItem('hgz_workout_logs', JSON.stringify(state.logs));
+      document.getElementById('logCountBadge').textContent = state.logs.length;
+      const container = document.getElementById('logHistory');
+
+      if (!state.logs.length) {
+        container.innerHTML = `<div class="empty-state">No sets logged yet. Select an exercise above or tap <strong>+ Log</strong> on any calculator station.</div>`;
+        return;
+      }
+
+      const grouped = {};
+      state.logs.forEach(item => {
+        if (!grouped[item.date]) grouped[item.date] = [];
+        grouped[item.date].push(item);
+      });
+
+      container.innerHTML = Object.entries(grouped).map(([date, items]) => {
+        const totalVol = items.reduce((acc, cur) => acc + (cur.feltKg * cur.sets * cur.reps), 0);
+        return `
+          <div class="day-group">
+            <div class="day-header">
+              <span>📅 ${date}</span>
+              <span>Vol: ${Math.round(totalVol).toLocaleString()} kg</span>
+            </div>
+            ${items.map(item => `
+              <div class="log-item">
+                <div>
+                  <div class="log-title">${item.exercise}</div>
+                  <div class="log-meta">Pin ${item.pin} (${item.stackKg} kg stack) • ${item.time}${item.notes ? ` • ${item.notes}` : ''}</div>
+                </div>
+                <div class="log-right">
+                  <div class="log-weight">
+                    <div class="log-weight-val">${item.feltKg} kg</div>
+                    <div class="log-sets">${item.sets} ×${item.reps} reps</div>
+                  </div>
+                  <button class="del-btn" onclick="deleteLog(${item.id})">✕</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function shareOrDownload(filename, content, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const file = new File([blob], filename, { type: mimeType });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: filename }).catch(() => {});
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportCSV() {
+      if (!state.logs.length) return alert('No logs to export yet.');
+      const headers = ['Date', 'Time', 'Exercise', 'Pin', 'Stack_kg', 'Mechanical_kg', 'Felt_kg', 'Sets', 'Reps', 'Volume_kg', 'Notes'];
+      const rows = state.logs.map(l => [
+        l.date,
+        l.time,
+        `"${l.exercise}"`,
+        l.pin,
+        l.stackKg,
+        l.theoKg,
+        l.feltKg,
+        l.sets,
+        l.reps,
+        (l.feltKg * l.sets * l.reps).toFixed(1),
+        `"${(l.notes || '').replace(/"/g, '""')}"`
+      ].join(','));
+      shareOrDownload(`hgz1003_workout_${new Date().toISOString().slice(0,10)}.csv`, [headers.join(','), ...rows].join('\n'), 'text/csv');
+    }
+
+    function exportJSON() {
+      if (!state.logs.length) return alert('No logs to export yet.');
+      shareOrDownload(`hgz1003_backup_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(state.logs, null, 2), 'application/json');
+    }
+
+    function importJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported)) {
+            state.logs = imported;
+            saveAndRenderLogs();
+            alert(`Imported ${imported.length} workout entries.`);
+          }
+        } catch (err) {
+          alert('Invalid JSON backup file.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function render() {
+      localStorage.setItem('hgz_pin', state.pin);
+      localStorage.setItem('hgz_friction', state.friction);
+      localStorage.setItem('hgz_mode', state.mode);
+
+      const stackW = getStackWeight(state.pin);
+      const fricMult = 1 + state.friction / 100;
+
+      document.getElementById('stackBadge').textContent = `${stackW.toFixed(2)} kg`;
+      document.getElementById('pinLabel').textContent = `Pin ${state.pin} (${stackW.toFixed(2)} kg)`;
+      document.getElementById('frictionLabel').textContent = `+${state.friction}%`;
+
+      document.getElementById('mode2x').classList.toggle('active', state.mode === '2x');
+      document.getElementById('modeHalf').classList.toggle('active', state.mode === '0.5x');
+
+      Array.from(pinGrid.children).forEach((btn, idx) => {
+        btn.classList.toggle('active', idx + 1 === state.pin);
+      });
+
+      const stations = getStations();
+      const maxPossible = 72 * 2.0 * 1.25;
+      const listEl = document.getElementById('stationList');
+      listEl.innerHTML = stations.map((s, idx) => {
+        const theo = stackW * s.ratio;
+        const felt = theo * fricMult;
+        const pct = Math.min(100, (felt / maxPossible) * 100);
+        return `
+          <div class="station-card">
+            <div class="station-top">
+              <div>
+                <div class="station-name">${s.name}</div>
+                <div class="station-ratio">${s.label}</div>
+              </div>
+              <button class="quick-log-btn" onclick="jumpToLog(${idx})">+ Log</button>
+            </div>
+            <div class="weights">
+              <span class="felt-weight">${felt.toFixed(1)} kg <small style="font-size:0.75rem;font-weight:500;color:#94a3b8;">felt</small></span>
+              <span class="theo-weight">Mechanical: ${theo.toFixed(2)} kg</span>
+            </div>
+            <div class="bar-bg"><div class="bar-fill" style="width:${pct}%"></div></div>
+          </div>
+        `;
+      }).join('');
+
+      updateLogPreview();
+      saveAndRenderLogs();
+    }
+
+    render();
+  </script>
+</body>
+</html>
